@@ -32,7 +32,7 @@ details summary{cursor:pointer;font-weight:650}.footer-actions{display:flex;flex
 <section class="summary" aria-label="単位集計">
  <div class="metric"><span class="label">卒業必要単位</span><strong id="totalNow">0 / 128</strong><div class="progress"><span id="totalBar"></span></div><small id="totalSub">取得扱い単位</small></div>
  <div class="metric"><span class="label">必修科目</span><strong id="requiredNow">0 / 30</strong><div class="progress"><span id="requiredBar"></span></div><small id="requiredSub">履修済み・仮履修を別集計</small></div>
- <div class="metric"><span class="label">選択科目</span><strong id="electiveNow">0 / 98</strong><div class="progress"><span id="electiveBar"></span></div><small>科目一覧から集計</small></div>
+ <div class="metric"><span class="label">選択科目</span><strong id="electiveNow">0 / 98</strong><div class="progress"><span id="electiveBar"></span></div><small>必修科目を除くA群・B群</small></div>
  <div class="metric"><span class="label">履修済み / 仮履修</span><strong id="statusNow">0 / 0</strong><small>単位数（別表示）</small></div>
 </section>
 
@@ -175,7 +175,9 @@ function totals(includePlanned=false){
  const val=c=>earned(c)||(includePlanned&&planned(c));
  const sum=arr=>courses.filter(c=>arr.includes(c.group)&&val(c)).reduce((s,c)=>s+c.credits,0);
  const required=sum(reqGroups), a=sum([...ai1a,...ai1b,...ai2,...aii]), b1=+state.b.b1||0,b2=+state.b.b2||0,b3=+state.b.b3||0,b=b1+b2+b3;
- return {required,elective:sum([...ai1a,...ai1b,...ai2,...aii,"大学院共通設置科目"]),a,ai1a:sum(ai1a),ai1b:sum(ai1b),ai2:sum(ai2),aii:sum(aii),b1,b2,b3,b,total:required+sum([...ai1a,...ai1b,...ai2,...aii,"大学院共通設置科目"])+b};
+ const electiveA=sum([...ai1a,...ai1b,...ai2,...aii]);
+ const elective=electiveA+b;
+ return {required,elective,a,ai1a:sum(ai1a),ai1b:sum(ai1b),ai2:sum(ai2),aii:sum(aii),b1,b2,b3,b,total:required+elective+sum(["大学院共通設置科目"])};
 }
 function bar(id,n,d){$(id).style.width=Math.min(100,d?100*n/d:0)+"%"}
 function reqCard(label,now,need,sub=""){return `<div class="req"><label>${label}</label><div class="reqline"><strong class="${now>=need?'good':'bad'}">${now} / ${need}</strong><span class="status ${now>=need?'good':'bad'}">${now>=need?'達成':'あと'+Math.max(0,need-now)}</span></div>${sub?`<div class="status">${sub}</div>`:""}</div>`}
@@ -184,7 +186,7 @@ function renderRequirements(){
  $("requirements").innerHTML=
  reqCard("卒業総単位",t.total,128,`仮履修を含む見込み：${totalWith.total}単位`)+
  reqCard("必修科目",t.required,30,`仮履修込み：${totalWith.required}単位`)+
- reqCard("選択科目（科目一覧内）",t.elective,98,`仮履修込み：${totalWith.elective}単位`)+
+ reqCard("選択科目（A群・B群）",t.elective,98,`仮履修を含む見込み：${totalWith.elective}単位`)+
  reqCard("A群 合計",t.a,60,`AI-1a・AI-1b・AI-2・II類の合計`)+
  reqCard("A群 AI-1a",t.ai1a,20)+reqCard("A群 AI-1b",t.ai1b,10)+
  reqCard("B群 合計（手動）",b,22)+reqCard("B群 I類",t.b1,8)+reqCard("B群 II類",t.b2,4)+reqCard("B群 III類",t.b3,2);
