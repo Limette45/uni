@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>電気工学科 卒業単位シミュレーター</title>
+<style>
+:root{color-scheme:light dark;--bg:#f3f5f9;--panel:#fff;--text:#172033;--muted:#667085;--line:#d9deea;--primary:#2459c4;--primaryText:#fff;--soft:#e9efff;--green:#16794b;--amber:#956000;--red:#b42318}
+@media(prefers-color-scheme:dark){:root{--bg:#111827;--panel:#1b2433;--text:#edf2fb;--muted:#a8b3c5;--line:#394456;--primary:#82aaff;--primaryText:#101827;--soft:#263653;--green:#67d6a0;--amber:#ffd166;--red:#ff8b82}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{padding:24px max(16px,calc((100vw - 1180px)/2));background:#172f62;color:#fff}
+header h1{font-size:clamp(22px,4vw,32px);margin:0 0 6px}header p{margin:0;color:#dce6ff}
+main{max-width:1180px;margin:auto;padding:18px 14px 50px}.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.metric,.panel,.course{background:var(--panel);border:1px solid var(--line);border-radius:12px}.metric{padding:14px}.metric .label{font-size:12px;color:var(--muted)}.metric strong{display:block;font-size:25px;margin-top:4px}.metric small{color:var(--muted)}
+.progress{height:7px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:8px}.progress span{display:block;height:100%;background:var(--primary);width:0}
+.panel{padding:16px;margin-bottom:16px}.panel h2{font-size:18px;margin:0 0 12px}.panel h3{font-size:15px;margin:16px 0 8px}.requirements{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.req{border:1px solid var(--line);border-radius:9px;padding:10px}.req label{display:block;font-size:13px;margin-bottom:5px}.reqline{display:flex;align-items:center;justify-content:space-between;gap:8px}.req strong{font-size:17px}.status{font-size:12px;color:var(--muted)}.good{color:var(--green)!important}.bad{color:var(--red)!important}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}.controls input,.controls select,.manual input{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit}.controls input[type=search]{flex:1;min-width:180px}.controls select{max-width:100%}
+button{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:8px;padding:8px 11px;font:inherit;cursor:pointer}button:hover{filter:brightness(.96)}button.primary{background:var(--primary);color:var(--primaryText);border-color:var(--primary)}button.active{outline:2px solid var(--primary);outline-offset:1px}
+.group-title{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin:22px 0 8px;border-bottom:1px solid var(--line);padding-bottom:7px}.group-title h3{margin:0;font-size:16px}.group-title span{font-size:12px;color:var(--muted)}
+.courses{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.course{padding:11px;display:flex;gap:10px;align-items:flex-start}.course-main{flex:1;min-width:0}.course-name{font-weight:650;overflow-wrap:anywhere}.course-meta{font-size:12px;color:var(--muted);margin-top:3px}.course-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}.course-actions button{font-size:12px;padding:6px 8px}.course-actions .taken{background:#d8f5e5;color:#125b39;border-color:#8bd5ad}.course-actions .planned{background:#fff0c2;color:#714700;border-color:#e9c65d}.course-actions .clear{color:var(--muted)}
+.manual-row{display:grid;grid-template-columns:1fr 110px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}.manual-row:last-child{border-bottom:0}.manual-row small{display:block;color:var(--muted)}.manual input{width:100%;text-align:right}
+.note{font-size:13px;color:var(--muted)}.pill{display:inline-block;border-radius:99px;padding:2px 7px;background:var(--soft);font-size:11px;margin-left:5px}.hidden{display:none!important}
+details summary{cursor:pointer;font-weight:650}.footer-actions{display:flex;flex-wrap:wrap;gap:8px}.warning{border-left:3px solid var(--amber);padding:8px 10px;background:var(--soft);border-radius:4px;font-size:13px}
+@media(max-width:760px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}.requirements{grid-template-columns:repeat(2,minmax(0,1fr))}.courses{grid-template-columns:1fr}}
+@media(max-width:420px){.requirements{grid-template-columns:1fr}.metric strong{font-size:22px}}
+</style>
+</head>
+<body>
+<header><h1>電気工学科 卒業単位シミュレーター</h1><p>2025年度生向け要件・科目一覧を内蔵。履修状況はこのブラウザーに自動保存されます。</p></header>
+<main>
+<section class="summary" aria-label="単位集計">
+ <div class="metric"><span class="label">卒業必要単位</span><strong id="totalNow">0 / 128</strong><div class="progress"><span id="totalBar"></span></div><small id="totalSub">取得扱い単位</small></div>
+ <div class="metric"><span class="label">必修科目</span><strong id="requiredNow">0 / 30</strong><div class="progress"><span id="requiredBar"></span></div><small id="requiredSub">履修済み・仮履修を別集計</small></div>
+ <div class="metric"><span class="label">選択科目</span><strong id="electiveNow">0 / 98</strong><div class="progress"><span id="electiveBar"></span></div><small>科目一覧から集計</small></div>
+ <div class="metric"><span class="label">履修済み / 仮履修</span><strong id="statusNow">0 / 0</strong><small>単位数（別表示）</small></div>
+</section>
+
+<section class="panel">
+<h2>卒業要件の達成状況</h2>
+<div class="requirements" id="requirements"></div>
+<p class="note">「履修済み」は取得済み単位として計算し、「仮履修」は予定単位として別に表示します。仮履修を含む見込み値も確認できます。卒業要件の正式な判定は大学の最新の履修要項を優先してください。</p>
+</section>
+
+<section class="panel">
+<h2>科目一覧・履修設定</h2>
+<div class="controls">
+ <input id="search" type="search" placeholder="科目名・科目コードで検索">
+ <select id="groupFilter"><option value="all">すべての分類</option></select>
+ <select id="statusFilter"><option value="all">すべての状態</option><option value="none">未設定</option><option value="taken">履修済み</option><option value="planned">仮履修</option></select>
+ <button id="clearFilters">絞り込み解除</button>
+</div>
+<div class="controls"><button class="primary" id="showAll">全科目を表示</button><button id="showUnset">未設定だけ表示</button><span class="note">科目ごとに「履修済み」「仮履修」「解除」を選択できます。</span></div>
+<div id="courseList"></div>
+</section>
+
+<section class="panel">
+<h2>B群の単位数（手動入力）</h2>
+<p class="note">B群の科目一覧は今回のデータに含まれていないため、分類ごとの単位数を直接入力して計算します。A群の科目単位とは別枠です。</p>
+<div class="manual-row"><div><strong>B群 I類</strong><small>必要：8単位以上</small></div><div class="manual"><input type="number" min="0" step="1" id="b1" value="0" aria-label="B群 I類の単位数"></div></div>
+<div class="manual-row"><div><strong>B群 II類</strong><small>必要：4単位以上</small></div><div class="manual"><input type="number" min="0" step="1" id="b2" value="0" aria-label="B群 II類の単位数"></div></div>
+<div class="manual-row"><div><strong>B群 III類</strong><small>必要：2単位以上</small></div><div class="manual"><input type="number" min="0" step="1" id="b3" value="0" aria-label="B群 III類の単位数"></div></div>
+<div class="reqline" style="margin-top:12px"><span>B群合計（最低22単位）</span><strong id="bTotal">0 / 22</strong></div><div class="progress"><span id="bBar"></span></div>
+<p id="bStatus" class="status"></p>
+</section>
+
+<section class="panel">
+<h2>保存・リセット</h2>
+<p class="note">入力内容は localStorage に自動保存されます。同じブラウザー・同じサイト内で再度開くと復元されます。ブラウザーのデータ消去や別端末では引き継がれません。</p>
+<div class="footer-actions"><button id="export">設定をJSONで書き出す</button><button id="importBtn">JSONを読み込む</button><input id="importFile" type="file" accept="application/json,.json" class="hidden"><button id="reset" style="color:var(--red)">すべて初期化</button></div>
+<p id="saveMessage" class="status" aria-live="polite">自動保存有効</p>
+</section>
+</main>
+<script>
+const courses = [
+{year:1,code:"11620009",name:"電気回路学I",credits:3,group:"必修科目"},
+{year:1,code:"11620010",name:"電気回路学II",credits:3,group:"必修科目"},
+{year:1,code:"11620011",name:"基礎演習実験",credits:2,group:"必修科目"},
+{year:1,code:"11620012",name:"電気基礎実験I",credits:2,group:"必修科目"},
+{year:1,code:"11620013",name:"ゼミ演習",credits:1,group:"必修科目"},
+{year:2,code:"11620022",name:"電気磁気学I",credits:3,group:"必修科目"},
+{year:2,code:"11620023",name:"電気磁気学II",credits:3,group:"必修科目"},
+{year:2,code:"11620027",name:"電気基礎実験II",credits:2,group:"必修科目"},
+{year:2,code:"11620028",name:"電気基礎実験III",credits:2,group:"必修科目"},
+{year:2,code:"11620044",name:"コンピュータプログラミングI",credits:1,group:"必修科目"},
+{year:3,code:"11620040",name:"電気工学実験I",credits:2,group:"必修科目"},
+{year:3,code:"11620041",name:"電気工学実験II",credits:2,group:"必修科目"},
+{year:4,code:"11620051",name:"卒業論文I",credits:2,group:"必修科目"},
+{year:4,code:"11620052",name:"卒業論文II",credits:2,group:"必修科目"},
+
+{year:1,code:"11620001",name:"解析学I",credits:2,group:"A群 I類 (AI-1a)"},
+{year:1,code:"11620003",name:"解析学II",credits:2,group:"A群 I類 (AI-1a)"},
+{year:1,code:"11620007",name:"基礎物理学I",credits:2,group:"A群 I類 (AI-1a)"},
+{year:1,code:"11620062",name:"ベクトル幾何",credits:2,group:"A群 I類 (AI-1a)"},
+{year:1,code:"11620063",name:"基礎物理学II演習",credits:1,group:"A群 I類 (AI-1a)"},
+{year:1,code:"11620065",name:"基礎物理学II",credits:2,group:"A群 I類 (AI-1a)"},
+{year:1,code:"11620066",name:"線形代数学",credits:2,group:"A群 I類 (AI-1a)"},
+{year:1,code:"11620020",name:"微分方程式",credits:2,group:"A群 I類 (AI-1a)"},
+{year:1,code:"11620021",name:"フーリエ解析",credits:2,group:"A群 I類 (AI-1a)"},
+{year:2,code:"11620064",name:"振動と波動",credits:2,group:"A群 I類 (AI-1a)"},
+{year:2,code:"11620090",name:"複素解析",credits:2,group:"A群 I類 (AI-1a)"},
+{year:2,code:"11620121",name:"数値解析",credits:2,group:"A群 I類 (AI-1a)"},
+{year:2,code:"11620123",name:"数理統計学",credits:2,group:"A群 I類 (AI-1a)"},
+
+{year:2,code:"11620024",name:"電子回路",credits:2,group:"A群 I類 (AI-1b)"},
+{year:2,code:"11620025",name:"電気・電子計測I",credits:2,group:"A群 I類 (AI-1b)"},
+{year:2,code:"11620060",name:"電気エネルギー工学I",credits:2,group:"A群 I類 (AI-1b)"},
+{year:2,code:"11620061",name:"パワーエレクトロニクス",credits:2,group:"A群 I類 (AI-1b)"},
+{year:3,code:"11620070",name:"過渡現象論",credits:2,group:"A群 I類 (AI-1b)"},
+{year:3,code:"11620071",name:"分布定数回路論",credits:2,group:"A群 I類 (AI-1b)"},
+{year:3,code:"11620110",name:"制御工学",credits:2,group:"A群 I類 (AI-1b)"},
+
+{year:1,code:"11620080",name:"コンピュータシステム入門",credits:2,group:"AI-2"},
+{year:1,code:"11620081",name:"電気電子工学入門",credits:2,group:"AI-2"},
+{year:1,code:"11610207",name:"学外実習I",credits:2,group:"AI-2"},
+{year:2,code:"11620091",name:"熱統計力学",credits:2,group:"AI-2"},
+{year:2,code:"11620095",name:"アナログ電子回路",credits:2,group:"AI-2"},
+{year:2,code:"11620096",name:"インフラストラクチャ概論",credits:2,group:"AI-2"},
+{year:2,code:"11620097",name:"コンピュータプログラミングII",credits:1,group:"AI-2"},
+{year:3,code:"11620104",name:"電気・電子計測II",credits:2,group:"AI-2"},
+{year:3,code:"11620105",name:"ディジタル電子回路",credits:2,group:"AI-2"},
+{year:3,code:"11620106",name:"電気エネルギー工学II",credits:2,group:"AI-2"},
+{year:3,code:"11620108",name:"高電圧工学",credits:2,group:"AI-2"},
+{year:3,code:"11620109",name:"プラズマ工学",credits:2,group:"AI-2"},
+{year:3,code:"11620111",name:"電気機器学I",credits:2,group:"AI-2"},
+{year:3,code:"11620112",name:"電気機器学II",credits:2,group:"AI-2"},
+{year:3,code:"11620114",name:"電気設備・法規",credits:2,group:"AI-2"},
+{year:3,code:"11620115",name:"環境電磁工学",credits:2,group:"AI-2"},
+{year:3,code:"11620116",name:"ディジタル制御",credits:2,group:"AI-2"},
+{year:3,code:"11620117",name:"電気機器設計法",credits:2,group:"AI-2"},
+{year:3,code:"11620118",name:"特別講義A",credits:2,group:"AI-2"},
+{year:3,code:"11620119",name:"特別講義B",credits:2,group:"AI-2"},
+{year:3,code:"11620122",name:"応用力学",credits:2,group:"AI-2"},
+{year:3,code:"11620124",name:"メカトロニクス",credits:2,group:"AI-2"},
+{year:3,code:"11620152",name:"電気電子材料",credits:2,group:"AI-2"},
+{year:3,code:"11620212",name:"学外実習2",credits:2,group:"AI-2"},
+{year:3,code:"11620130",name:"コンピュータ応用解析",credits:2,group:"大学院共通設置科目"},
+{year:3,code:"11620131",name:"量子力学",credits:2,group:"大学院共通設置科目"},
+
+{year:2,code:"11620200",name:"電子デバイスI",credits:2,group:"A群 II類"},
+{year:2,code:"11620201",name:"シグナルプロセシング",credits:2,group:"A群 II類"},
+{year:3,code:"11610204",name:"知的財産権",credits:2,group:"A群 II類"},
+{year:3,code:"11620042",name:"電子工学実験I",credits:2,group:"A群 II類"},
+{year:3,code:"11620043",name:"電子工学実験II",credits:2,group:"A群 II類"},
+{year:3,code:"11620151",name:"電子デバイスII",credits:2,group:"A群 II類"},
+{year:3,code:"11620153",name:"光エレクトロニクス",credits:2,group:"A群 II類"},
+{year:3,code:"11620155",name:"情報理論",credits:2,group:"A群 II類"},
+{year:3,code:"11620158",name:"固体物性論",credits:2,group:"A群 II類"},
+{year:3,code:"11620159",name:"光通信工学",credits:2,group:"A群 II類"},
+{year:3,code:"11620160",name:"アンテナ工学",credits:2,group:"A群 II類"},
+{year:3,code:"11620161",name:"マイクロ波工学",credits:2,group:"A群 II類"},
+{year:3,code:"11620162",name:"通信方式",credits:2,group:"A群 II類"},
+{year:3,code:"11620163",name:"超音波エレクトロニクスI",credits:2,group:"A群 II類"},
+{year:3,code:"11620164",name:"超音波エレクトロニクスII",credits:2,group:"A群 II類"},
+{year:3,code:"11620165",name:"放射線科学",credits:2,group:"A群 II類"},
+{year:3,code:"11620166",name:"機械学習",credits:2,group:"A群 II類"},
+{year:3,code:"11620210",name:"伝送線路論",credits:2,group:"A群 II類"},
+{year:3,code:"11620211",name:"電磁波論",credits:2,group:"A群 II類"},
+{year:3,code:"11620901",name:"協定校単位互換科目",credits:2,group:"A群 II類"}
+];
+const KEY="electricalDegreeSimulator_2025_v1";
+const initial=()=>({status:{},b:{b1:0,b2:0,b3:0}});
+let state=initial();
+try{const saved=JSON.parse(localStorage.getItem(KEY)||"null");if(saved&&typeof saved==="object")state={...initial(),...saved,status:saved.status||{},b:{...initial().b,...saved.b}}}catch(e){}
+const $=id=>document.getElementById(id);
+const isReq=c=>c.group==="必修科目";
+const earned=c=>state.status[c.code]==="taken";
+const planned=c=>state.status[c.code]==="planned";
+const counts=(statusWanted)=>courses.filter(c=>state.status[c.code]===statusWanted).reduce((s,c)=>s+c.credits,0);
+const credit=(groups,includePlanned=false)=>courses.filter(c=>groups.includes(c.group)&&(earned(c)||(includePlanned&&planned(c)))).reduce((s,c)=>s+c.credits,0);
+const reqGroups=["必修科目"];
+const ai1a=["A群 I類 (AI-1a)"], ai1b=["A群 I類 (AI-1b)"], ai2=["AI-2"], aii=["A群 II類"];
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));$("saveMessage").textContent="保存済み · "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"})}catch(e){$("saveMessage").textContent="保存できませんでした（ブラウザーの保存設定を確認してください）"}}
+function totals(includePlanned=false){
+ const val=c=>earned(c)||(includePlanned&&planned(c));
+ const sum=arr=>courses.filter(c=>arr.includes(c.group)&&val(c)).reduce((s,c)=>s+c.credits,0);
+ const required=sum(reqGroups), a=sum([...ai1a,...ai1b,...ai2,...aii]), b1=+state.b.b1||0,b2=+state.b.b2||0,b3=+state.b.b3||0,b=b1+b2+b3;
+ return {required,elective:sum([...ai1a,...ai1b,...ai2,...aii,"大学院共通設置科目"]),a,ai1a:sum(ai1a),ai1b:sum(ai1b),ai2:sum(ai2),aii:sum(aii),b1,b2,b3,b,total:required+sum([...ai1a,...ai1b,...ai2,...aii,"大学院共通設置科目"])+b};
+}
+function bar(id,n,d){$(id).style.width=Math.min(100,d?100*n/d:0)+"%"}
+function reqCard(label,now,need,sub=""){return `<div class="req"><label>${label}</label><div class="reqline"><strong class="${now>=need?'good':'bad'}">${now} / ${need}</strong><span class="status ${now>=need?'good':'bad'}">${now>=need?'達成':'あと'+Math.max(0,need-now)}</span></div>${sub?`<div class="status">${sub}</div>`:""}</div>`}
+function renderRequirements(){
+ const t=totals(), totalWith=totals(true),b=t.b;
+ $("requirements").innerHTML=
+ reqCard("卒業総単位",t.total,128,`仮履修を含む見込み：${totalWith.total}単位`)+
+ reqCard("必修科目",t.required,30,`仮履修込み：${totalWith.required}単位`)+
+ reqCard("選択科目（科目一覧内）",t.elective,98,`仮履修込み：${totalWith.elective}単位`)+
+ reqCard("A群 合計",t.a,60,`AI-1a・AI-1b・AI-2・II類の合計`)+
+ reqCard("A群 AI-1a",t.ai1a,20)+reqCard("A群 AI-1b",t.ai1b,10)+
+ reqCard("B群 合計（手動）",b,22)+reqCard("B群 I類",t.b1,8)+reqCard("B群 II類",t.b2,4)+reqCard("B群 III類",t.b3,2);
+}
+function renderSummary(){
+ const t=totals(),tp=totals(true),taken=counts("taken"),plannedN=counts("planned");
+ $("totalNow").textContent=`${t.total} / 128`;bar("totalBar",t.total,128);$("totalSub").textContent=`仮履修込み見込み：${tp.total}単位`;
+ $("requiredNow").textContent=`${t.required} / 30`;bar("requiredBar",t.required,30);$("requiredSub").textContent=`仮履修込み：${tp.required}単位`;
+ $("electiveNow").textContent=`${t.elective} / 98`;bar("electiveBar",t.elective,98);
+ $("statusNow").textContent=`${taken} / ${plannedN}`;
+ $("bTotal").textContent=`${t.b} / 22`;bar("bBar",t.b,22);$("bStatus").textContent=t.b>=22?"B群合計の最低単位数を満たしています。":`B群合計であと${22-t.b}単位必要です。`;
+ $("bStatus").className="status "+(t.b>=22?"good":"bad");
+ renderRequirements();
+}
+function groupOrder(){return ["必修科目","A群 I類 (AI-1a)","A群 I類 (AI-1b)","AI-2","大学院共通設置科目","A群 II類"]}
+function renderCourses(){
+ const query=$("search").value.trim().toLowerCase(),gf=$("groupFilter").value,sf=$("statusFilter").value;
+ let filtered=courses.filter(c=>{
+ const matchText=(c.name+" "+c.code+" "+c.group+" "+c.year).toLowerCase().includes(query);
+ const matchGroup=gf==="all"||c.group===gf;
+ const status=state.status[c.code]||"none";
+ return matchText&&matchGroup&&(sf==="all"||status===sf);
+ });
+ let html="";
+ for(const group of groupOrder()){
+ const list=filtered.filter(c=>c.group===group);if(!list.length)continue;
+ const groupCredits=list.reduce((s,c)=>s+c.credits,0);
+ html+=`<div class="group-title"><h3>${group}</h3><span>${list.length}科目 · 表示分 ${groupCredits}単位</span></div><div class="courses">`;
+ for(const c of list){
+ const s=state.status[c.code]||"none";
+ html+=`<article class="course"><div class="course-main"><div class="course-name">${c.name}${s==="taken"?'<span class="pill">履修済み</span>':s==="planned"?'<span class="pill">仮履修</span>':""}</div><div class="course-meta">${c.year}年次 · ${c.code} · ${c.credits}単位</div><div class="course-actions"><button data-set="taken" data-code="${c.code}" class="${s==="taken"?"taken":""}">履修済み</button><button data-set="planned" data-code="${c.code}" class="${s==="planned"?"planned":""}">仮履修</button><button data-set="none" data-code="${c.code}" class="clear">解除</button></div></div></article>`;
+ }
+ html+="</div>";
+ }
+ $("courseList").innerHTML=html||'<p class="note">該当する科目がありません。</p>';
+}
+function render(){renderSummary();renderCourses()}
+const groups=groupOrder();
+for(const g of groups){const o=document.createElement("option");o.value=g;o.textContent=g;$("groupFilter").append(o)}
+$("courseList").addEventListener("click",e=>{const b=e.target.closest("button[data-set]");if(!b)return;const code=b.dataset.code,set=b.dataset.set;if(set==="none")delete state.status[code];else state.status[code]=set;save();render()});
+["search","groupFilter","statusFilter"].forEach(id=>$(id).addEventListener(id==="search"?"input":"change",renderCourses));
+$("clearFilters").addEventListener("click",()=>{$("search").value="";$("groupFilter").value="all";$("statusFilter").value="all";renderCourses()});
+$("showAll").addEventListener("click",()=>{$("statusFilter").value="all";renderCourses()});
+$("showUnset").addEventListener("click",()=>{$("statusFilter").value="none";renderCourses()});
+["b1","b2","b3"].forEach(id=>$(id).addEventListener("input",()=>{state.b[id]=Math.max(0,Number($(id).value)||0);save();renderSummary()}));
+function syncB(){["b1","b2","b3"].forEach(id=>$(id).value=state.b[id]??0)}
+$("export").addEventListener("click",()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="electrical-degree-simulator.json";a.click();URL.revokeObjectURL(url)});
+$("importBtn").addEventListener("click",()=>$("importFile").click());
+$("importFile").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{const obj=JSON.parse(await f.text());if(!obj||typeof obj!=="object"||typeof obj.status!=="object"||typeof obj.b!=="object")throw Error("format");state={...initial(),...obj,status:obj.status,b:{...initial().b,...obj.b}};save();syncB();render();$("saveMessage").textContent="JSONを読み込みました"}catch(err){alert("JSONを読み込めませんでした。書き出した設定ファイルを選択してください。")}e.target.value=""});
+$("reset").addEventListener("click",()=>{if(!confirm("履修状況とB群の入力をすべて初期化しますか？"))return;state=initial();save();syncB();render()});
+syncB();render();
+</script>
+</body>
+</html>
